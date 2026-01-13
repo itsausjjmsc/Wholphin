@@ -34,10 +34,15 @@ DOCS_DIR="docs/shield"
 APP_PACKAGE="com.github.damontecres.wholphin"
 APP_MAIN_ACTIVITY="${APP_PACKAGE}/.MainActivity"
 
-# Test URL - can be overridden via environment variable
-# Note: Default URL contains an API key from the problem statement for testing purposes.
-# For production use, always override with: export SHIELD_TEST_URL="your_secure_url"
-TEST_URL="${SHIELD_TEST_URL:-https://jellyfin.trogsmedia.com/Items/747d07d0d28a9cb044c7c228bf97e1fe/Download?api_key=9c97fc0c351149639b12aea5698f2d63}"
+# Test URL - MUST be set via SHIELD_TEST_URL environment variable
+# Example: export SHIELD_TEST_URL="https://your-server.com/path/to/media?api_key=YOUR_KEY"
+if [ -z "$SHIELD_TEST_URL" ]; then
+    echo "ERROR: SHIELD_TEST_URL environment variable is not set." >&2
+    echo "Please set it before running this script:" >&2
+    echo "  export SHIELD_TEST_URL=\"https://your-server.com/path/to/media\"" >&2
+    exit 1
+fi
+TEST_URL="$SHIELD_TEST_URL"
 
 ################################################################################
 # Utility Functions

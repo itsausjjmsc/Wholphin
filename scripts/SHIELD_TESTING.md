@@ -60,24 +60,24 @@ adb shell getprop ro.product.model
 
 ## Usage
 
-### Basic Execution
+### Required Environment Variable
 
-From the repository root, run:
+The script requires the `SHIELD_TEST_URL` environment variable to be set before execution. This URL should point to your test media file.
 
 ```bash
-./scripts/shield_testing_automation.sh
+export SHIELD_TEST_URL="https://your-server.com/path/to/media?api_key=YOUR_KEY"
 ```
 
-### Custom Test URL
+### Basic Execution
 
-To use a different test media URL:
+From the repository root, after setting the required environment variable:
 
 ```bash
 export SHIELD_TEST_URL="https://your-server.com/path/to/media"
 ./scripts/shield_testing_automation.sh
 ```
 
-**Security Note**: The default test URL contains an API key from the problem statement. For production use, always override this with your own secure URL using the `SHIELD_TEST_URL` environment variable.
+**Security Note**: Never hardcode API keys in the script. Always pass them via the `SHIELD_TEST_URL` environment variable.
 
 ### What the Script Does
 
@@ -106,17 +106,11 @@ All discovery results are saved to `shield_results/` directory:
 
 #### Phase 4: Playback Testing
 - Launches Wholphin app on Shield
-- Streams test media from network URL
+- Streams test media from network URL (provided via `SHIELD_TEST_URL`)
 - Captures logcat output during playback
 - Saves results to `shield_results/stream_test_results.txt`
 
-Default test URL: `https://jellyfin.trogsmedia.com/Items/.../Download?api_key=...`
-
-**Note**: You can override the test URL by setting the `SHIELD_TEST_URL` environment variable:
-```bash
-export SHIELD_TEST_URL="your_custom_test_url"
-./scripts/shield_testing_automation.sh
-```
+**Note**: The test URL must be set via the `SHIELD_TEST_URL` environment variable before running the script.
 
 #### Phase 5: Results Upload
 - Switches to `shield-exoplayer-patch` branch
