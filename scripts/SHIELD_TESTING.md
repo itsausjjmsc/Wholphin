@@ -15,7 +15,7 @@ The `shield_testing_automation.sh` script automates the complete process of:
 ### Required Tools
 - **ADB (Android Debug Bridge)**: Must be installed and accessible in your PATH
   - Install via Android SDK Platform Tools
-  - Download from: https://developer.android.com/studio/releases/platform-tools
+  - Download from: [Android SDK Platform Tools](https://developer.android.com/studio/releases/platform-tools)
 
 ### Device Requirements
 - NVIDIA Shield TV device
@@ -66,6 +66,17 @@ The script requires the `SHIELD_TEST_URL` environment variable to be set before 
 
 ```bash
 export SHIELD_TEST_URL="https://your-server.com/path/to/media?api_key=YOUR_KEY"
+```
+
+### Optional Environment Variables
+
+- `SHIELD_INIT_WAIT`: Time in seconds to wait for app initialization (default: 30)
+- `SHIELD_TEST_DURATION`: Time in seconds to run the playback test (default: 60)
+
+```bash
+# Example: Shorter wait times for CI environments
+export SHIELD_INIT_WAIT=10
+export SHIELD_TEST_DURATION=30
 ```
 
 ### Basic Execution

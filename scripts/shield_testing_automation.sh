@@ -34,6 +34,10 @@ DOCS_DIR="docs/shield"
 APP_PACKAGE="com.github.damontecres.wholphin"
 APP_MAIN_ACTIVITY="${APP_PACKAGE}/.MainActivity"
 
+# Configurable wait times (can be overridden via environment variables)
+INIT_WAIT_TIME="${SHIELD_INIT_WAIT:-30}"
+TEST_DURATION="${SHIELD_TEST_DURATION:-60}"
+
 # Test URL - MUST be set via SHIELD_TEST_URL environment variable
 # Example: export SHIELD_TEST_URL="https://your-server.com/path/to/media?api_key=YOUR_KEY"
 if [ -z "$SHIELD_TEST_URL" ]; then
@@ -90,18 +94,21 @@ check_shield_connected() {
     adb start-server > /dev/null 2>&1 || true
     
     # Get list of devices
-    local devices=$(adb devices | grep -v "List of devices" | grep -v "^$" | grep "device$" || true)
+    local devices
+    devices=$(adb devices | grep -v "List of devices" | grep -v "^$" | grep "device$" || true)
     
     if [ -z "$devices" ]; then
         exit_with_error "No ADB devices connected. Please connect your NVIDIA Shield via ADB."
     fi
     
     # Count devices
-    local device_count=$(echo "$devices" | wc -l)
+    local device_count
+    device_count=$(echo "$devices" | wc -l)
     log_info "Found $device_count ADB device(s) connected"
     
     # Check if device is a Shield (optional check - some Shield devices may not report model)
-    local model=$(adb shell getprop ro.product.model 2>/dev/null | tr -d '\r\n' || echo "Unknown")
+    local model
+    model=$(adb shell getprop ro.product.model 2>/dev/null | tr -d '\r\n' || echo "Unknown")
     log_info "Device model: $model"
 }
 
@@ -234,8 +241,8 @@ run_playback_test() {
         2>&1 | tee -a "$RESULTS_DIR/stream_test_launch.txt" || true
     
     # Wait for app to start and begin playback
-    log_info "Waiting for app to initialize (30 seconds)..."
-    sleep 30
+    log_info "Waiting for app to initialize ($INIT_WAIT_TIME seconds)..."
+    sleep "$INIT_WAIT_TIME"
     
     # Capture initial logcat state
     log_info "Capturing initial logcat..."
@@ -246,8 +253,8 @@ run_playback_test() {
     adb logcat -c || true
     
     # Continue capturing for test duration
-    log_info "Continuing test for 60 seconds..."
-    sleep 60
+    log_info "Continuing test for $TEST_DURATION seconds..."
+    sleep "$TEST_DURATION"
     
     # Append new logcat entries only (since we cleared the buffer)
     log_info "Appending additional logcat output..."
@@ -371,7 +378,7 @@ main() {
 }
 
 # Trap errors and cleanup
-trap 'log_error "Script failed at line $LINENO. Cleaning up..."; cleanup; exit 1' ERR
+trap 'exit_code=$?; log_error "Script failed at line $LINENO (exit code: $exit_code). Cleaning up..."; cleanup; exit $exit_code' ERR
 
 # Run main function
 main "$@"
