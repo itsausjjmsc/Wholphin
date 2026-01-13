@@ -68,6 +68,15 @@ From the repository root, run:
 ./scripts/shield_testing_automation.sh
 ```
 
+### Custom Test URL
+
+To use a different test media URL:
+
+```bash
+export SHIELD_TEST_URL="https://your-server.com/path/to/media"
+./scripts/shield_testing_automation.sh
+```
+
 ### What the Script Does
 
 #### Phase 1: Safety Checks
@@ -99,7 +108,13 @@ All discovery results are saved to `shield_results/` directory:
 - Captures logcat output during playback
 - Saves results to `shield_results/stream_test_results.txt`
 
-Test URL: `https://jellyfin.trogsmedia.com/Items/747d07d0d28a9cb044c7c228bf97e1fe/Download?api_key=9c97fc0c351149639b12aea5698f2d63`
+Default test URL: `https://jellyfin.trogsmedia.com/Items/.../Download?api_key=...`
+
+**Note**: You can override the test URL by setting the `SHIELD_TEST_URL` environment variable:
+```bash
+export SHIELD_TEST_URL="your_custom_test_url"
+./scripts/shield_testing_automation.sh
+```
 
 #### Phase 5: Results Upload
 - Switches to `shield-exoplayer-patch` branch

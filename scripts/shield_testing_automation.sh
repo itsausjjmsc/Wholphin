@@ -33,7 +33,10 @@ RESULTS_DIR="shield_results"
 DOCS_DIR="docs/shield"
 APP_PACKAGE="com.github.damontecres.wholphin"
 APP_MAIN_ACTIVITY="${APP_PACKAGE}/.MainActivity"
-TEST_URL="https://jellyfin.trogsmedia.com/Items/747d07d0d28a9cb044c7c228bf97e1fe/Download?api_key=9c97fc0c351149639b12aea5698f2d63"
+
+# Test URL - can be overridden via environment variable
+# Default URL is provided in the problem statement for testing
+TEST_URL="${SHIELD_TEST_URL:-https://jellyfin.trogsmedia.com/Items/747d07d0d28a9cb044c7c228bf97e1fe/Download?api_key=9c97fc0c351149639b12aea5698f2d63}"
 
 ################################################################################
 # Utility Functions
@@ -228,21 +231,19 @@ run_playback_test() {
     log_info "Waiting for app to initialize (30 seconds)..."
     sleep 30
     
-    # Capture logcat for the test duration
-    log_info "Capturing logcat for 60 seconds..."
-    adb logcat -d > "$RESULTS_DIR/stream_test_results.txt" 2>&1 &
-    LOGCAT_PID=$!
+    # Capture initial logcat state
+    log_info "Capturing initial logcat..."
+    adb logcat -d > "$RESULTS_DIR/stream_test_results.txt" 2>&1 || \
+        log_warn "Failed to capture initial logcat"
     
-    # Continue capturing for a duration
+    # Continue capturing for test duration
+    log_info "Continuing test for 60 seconds..."
     sleep 60
     
-    # Save final logcat state
+    # Save final logcat state (append to capture full test duration)
     log_info "Saving final logcat output..."
     adb logcat -d > "$RESULTS_DIR/stream_test_results.txt" 2>&1 || \
         log_warn "Failed to capture final logcat"
-    
-    # Kill background logcat if still running
-    kill $LOGCAT_PID 2>/dev/null || true
     
     log_info "Playback test completed"
 }
@@ -280,12 +281,20 @@ update_results_branch() {
     
     # Copy results to docs/shield/
     log_info "Copying Shield results to $DOCS_DIR..."
-    cp -r "$RESULTS_DIR"/* "$DOCS_DIR/" 2>/dev/null || \
-        exit_with_error "Failed to copy results to $DOCS_DIR"
+    if [ -n "$(ls -A "$RESULTS_DIR" 2>/dev/null)" ]; then
+        cp -r "$RESULTS_DIR"/* "$DOCS_DIR/" 2>/dev/null || \
+            exit_with_error "Failed to copy results to $DOCS_DIR"
+    else
+        exit_with_error "No results to copy from $RESULTS_DIR"
+    fi
     
     # Force add all files to git
     log_info "Adding results to git..."
-    git add -f "$DOCS_DIR"/*
+    if [ -n "$(ls -A "$DOCS_DIR" 2>/dev/null)" ]; then
+        git add -f "$DOCS_DIR"/*
+    else
+        log_warn "No files to add in $DOCS_DIR"
+    fi
     
     # Check if there are changes to commit
     if git diff --cached --quiet; then
