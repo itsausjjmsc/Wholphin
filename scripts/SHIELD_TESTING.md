@@ -77,6 +77,8 @@ export SHIELD_TEST_URL="https://your-server.com/path/to/media"
 ./scripts/shield_testing_automation.sh
 ```
 
+**Security Note**: The default test URL contains an API key from the problem statement. For production use, always override this with your own secure URL using the `SHIELD_TEST_URL` environment variable.
+
 ### What the Script Does
 
 #### Phase 1: Safety Checks

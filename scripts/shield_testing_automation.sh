@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 
 ################################################################################
 # Shield Testing Automation Script
@@ -35,7 +35,8 @@ APP_PACKAGE="com.github.damontecres.wholphin"
 APP_MAIN_ACTIVITY="${APP_PACKAGE}/.MainActivity"
 
 # Test URL - can be overridden via environment variable
-# Default URL is provided in the problem statement for testing
+# Note: Default URL contains an API key from the problem statement for testing purposes.
+# For production use, always override with: export SHIELD_TEST_URL="your_secure_url"
 TEST_URL="${SHIELD_TEST_URL:-https://jellyfin.trogsmedia.com/Items/747d07d0d28a9cb044c7c228bf97e1fe/Download?api_key=9c97fc0c351149639b12aea5698f2d63}"
 
 ################################################################################
@@ -236,14 +237,17 @@ run_playback_test() {
     adb logcat -d > "$RESULTS_DIR/stream_test_results.txt" 2>&1 || \
         log_warn "Failed to capture initial logcat"
     
+    # Clear logcat buffer to avoid duplicates in next capture
+    adb logcat -c || true
+    
     # Continue capturing for test duration
     log_info "Continuing test for 60 seconds..."
     sleep 60
     
-    # Append final logcat state to capture full test duration
-    log_info "Appending final logcat output..."
+    # Append new logcat entries only (since we cleared the buffer)
+    log_info "Appending additional logcat output..."
     adb logcat -d >> "$RESULTS_DIR/stream_test_results.txt" 2>&1 || \
-        log_warn "Failed to append final logcat"
+        log_warn "Failed to append additional logcat"
     
     log_info "Playback test completed"
 }
