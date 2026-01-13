@@ -50,26 +50,30 @@ TEST_URL="$SHIELD_TEST_URL"
 
 ################################################################################
 # Utility Functions
-################################################################################
+# log_info prints MESSAGE to stdout prefixed with a green "[INFO]" label.
 
 log_info() {
     echo -e "${GREEN}[INFO]${NC} $1"
 }
 
+# log_warn prints a warning message prefixed with [WARN] in yellow.
 log_warn() {
     echo -e "${YELLOW}[WARN]${NC} $1"
 }
 
+# log_error prints an error message prefixed with a red [ERROR] tag.
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# log_step prints a blank line, a green step header containing the provided message, and another blank line.
 log_step() {
     echo ""
     echo -e "${GREEN}==> $1${NC}"
     echo ""
 }
 
+# exit_with_error logs an error message and exits the script with status 1.
 exit_with_error() {
     log_error "$1"
     exit 1
@@ -77,7 +81,7 @@ exit_with_error() {
 
 ################################################################################
 # Safety Checks
-################################################################################
+# check_adb_installed checks that the Android Debug Bridge (adb) is available in PATH and exits with an error if it is not.
 
 check_adb_installed() {
     log_step "Checking ADB installation..."
@@ -87,6 +91,7 @@ check_adb_installed() {
     log_info "ADB found: $(which adb)"
 }
 
+# check_shield_connected checks for an attached ADB device, starts the ADB server if needed, logs the number of connected devices and the device model, and exits with an error if no devices are found.
 check_shield_connected() {
     log_step "Checking for NVIDIA Shield connection..."
     
@@ -112,6 +117,7 @@ check_shield_connected() {
     log_info "Device model: $model"
 }
 
+# check_git_repo verifies the script is running from the root of a Git repository and exits with an error if not.
 check_git_repo() {
     log_step "Verifying git repository..."
     if [ ! -d ".git" ]; then
@@ -122,7 +128,8 @@ check_git_repo() {
 
 ################################################################################
 # Branch Management
-################################################################################
+# ensure_branch_clean ensures the given Git branch exists locally, has no uncommitted changes, and is reset to match origin/<branch> when that remote branch exists.
+# $1: branch name to verify/create and make clean (e.g., "shield-debug-test").
 
 ensure_branch_clean() {
     local branch=$1
@@ -164,7 +171,7 @@ ensure_branch_clean() {
 
 ################################################################################
 # Shield Discovery
-################################################################################
+# prepare_results_directory prepares the results directory for a run by removing any existing "$RESULTS_DIR" and creating an empty directory at that path.
 
 prepare_results_directory() {
     log_step "Preparing results directory..."
@@ -180,6 +187,7 @@ prepare_results_directory() {
     log_info "Results directory created: $RESULTS_DIR"
 }
 
+# perform_shield_discovery captures Shield device diagnostics (audio flinger, device features, codecs, and display) via ADB and writes the outputs into files under $RESULTS_DIR.
 perform_shield_discovery() {
     log_step "Performing Shield discovery via ADB..."
     
@@ -212,7 +220,7 @@ perform_shield_discovery() {
 
 ################################################################################
 # Playback Testing
-################################################################################
+# run_playback_test runs the playback test by launching the app with $TEST_URL and collecting logcat output into the results directory (`stream_test_launch.txt` and `stream_test_results.txt`).
 
 run_playback_test() {
     log_step "Running playback test on Shield..."
@@ -266,7 +274,7 @@ run_playback_test() {
 
 ################################################################################
 # Results Handling
-################################################################################
+# update_results_branch updates the results branch by copying the contents of RESULTS_DIR into DOCS_DIR, committing any changes, and pushing them to origin/RESULTS_BRANCH.
 
 update_results_branch() {
     log_step "Updating results to '$RESULTS_BRANCH' branch..."
@@ -326,7 +334,8 @@ update_results_branch() {
 
 ################################################################################
 # Cleanup
-################################################################################
+# cleanup returns to the work branch named by $WORK_BRANCH if it exists and logs progress.
+# It attempts to checkout that branch and suppresses any checkout errors.
 
 cleanup() {
     log_step "Cleaning up..."
@@ -342,7 +351,7 @@ cleanup() {
 
 ################################################################################
 # Main Execution
-################################################################################
+# main starts the Shield testing automation workflow by performing environment checks, preparing results, running discovery and playback tests, updating the results branch, and cleaning up.
 
 main() {
     log_step "Starting Shield Testing Automation"
