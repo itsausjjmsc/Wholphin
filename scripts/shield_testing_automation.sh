@@ -240,10 +240,10 @@ run_playback_test() {
     log_info "Continuing test for 60 seconds..."
     sleep 60
     
-    # Save final logcat state (append to capture full test duration)
-    log_info "Saving final logcat output..."
-    adb logcat -d > "$RESULTS_DIR/stream_test_results.txt" 2>&1 || \
-        log_warn "Failed to capture final logcat"
+    # Append final logcat state to capture full test duration
+    log_info "Appending final logcat output..."
+    adb logcat -d >> "$RESULTS_DIR/stream_test_results.txt" 2>&1 || \
+        log_warn "Failed to append final logcat"
     
     log_info "Playback test completed"
 }
@@ -290,11 +290,7 @@ update_results_branch() {
     
     # Force add all files to git
     log_info "Adding results to git..."
-    if [ -n "$(ls -A "$DOCS_DIR" 2>/dev/null)" ]; then
-        git add -f "$DOCS_DIR"/*
-    else
-        log_warn "No files to add in $DOCS_DIR"
-    fi
+    git add -f "$DOCS_DIR" || log_warn "Failed to add $DOCS_DIR to git"
     
     # Check if there are changes to commit
     if git diff --cached --quiet; then
