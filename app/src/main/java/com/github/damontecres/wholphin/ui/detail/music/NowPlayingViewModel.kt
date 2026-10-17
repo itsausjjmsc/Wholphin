@@ -60,6 +60,7 @@ import java.util.UUID
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 @UnstableApi
 @HiltViewModel(assistedFactory = NowPlayingViewModel.Factory::class)
@@ -244,6 +245,9 @@ class NowPlayingViewModel
                                             // Only change if there's backdrop currently, or at 15 seconds left to prevent quick changes
                                             doUpdateBackdrop(audio.id, it)
                                             delay(2.minutes)
+                                        } else {
+                                            // Wait before checking again instead of looping without suspending
+                                            delay(1.seconds)
                                         }
                                     }
                                 } else {
