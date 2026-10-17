@@ -302,8 +302,8 @@ class MusicService
                         ?.mediaStreams
                         ?.any { stream ->
                             stream.type == MediaStreamType.AUDIO &&
-                                stream.channels.gt(2)
-                            stream.codec != Codec.Audio.AC3
+                                stream.channels.gt(2) &&
+                                stream.codec != Codec.Audio.AC3
                         } == true
             val url =
                 if (needsAc3Transcode) {
