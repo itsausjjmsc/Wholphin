@@ -389,7 +389,7 @@ class SearchViewModel
                     if (combinedMode) {
                         state.value.combinedResults
                     } else {
-                        state.value.includedSearchableTypes.getOrNull(position.row)?.let {
+                        state.value.includedSearchableTypes.getOrNull(position.row - RESULTS_START)?.let {
                             state.value.results[it]
                         }
                     } ?: return
@@ -417,7 +417,7 @@ class SearchViewModel
                             )
                         }
                     } else {
-                        state.value.includedSearchableTypes.getOrNull(position.row)?.let { type ->
+                        state.value.includedSearchableTypes.getOrNull(position.row - RESULTS_START)?.let { type ->
                             state.value.results[type] = newList
                         }
                     }
