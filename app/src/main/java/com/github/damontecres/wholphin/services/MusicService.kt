@@ -122,7 +122,7 @@ class MusicService
                 mutex.withLock {
                     if (mediaSession == null) {
                         Timber.i("Starting music MediaSession")
-                        mediaSession = MediaSession.Builder(context, player).build()
+                        mediaSession = playerFactory.createMediaSession(player)
                         activityTracker =
                             TrackActivityPlaybackListener(api, player) {
                                 state.value.currentItemId?.let { itemId ->
