@@ -53,6 +53,7 @@ import org.jellyfin.sdk.api.client.extensions.subtitleApi
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
 import org.jellyfin.sdk.api.client.extensions.videosApi
 import org.jellyfin.sdk.model.api.MediaStream
+import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.PlayMethod
 import org.jellyfin.sdk.model.api.PlaybackOrder
 import org.jellyfin.sdk.model.api.PlaybackStartInfo
@@ -183,9 +184,12 @@ class PlayExternalViewModel
                             ?.index
                     val externalSubtitles =
                         mediaSource.mediaStreams
-                            ?.filter { it.isExternal }
-                            ?.sortedWith(compareBy<MediaStream> { it.index == subtitleIndex }.thenBy { it.isDefault })
-                            .orEmpty()
+                            ?.filter { it.isExternal && it.type == MediaStreamType.SUBTITLE }
+                            // Chosen subtitle first, then defaults, since some players (eg VLC) only take the first one
+                            ?.sortedWith(
+                                compareByDescending<MediaStream> { it.index == subtitleIndex }
+                                    .thenByDescending { it.isDefault },
+                            ).orEmpty()
                     val subtitleUrls =
                         externalSubtitles.map {
                             val format = it.path?.let { File(it).extension } ?: "srt"
