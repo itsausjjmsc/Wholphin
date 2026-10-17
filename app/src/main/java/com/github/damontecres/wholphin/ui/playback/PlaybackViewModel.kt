@@ -409,7 +409,8 @@ class PlaybackViewModel
                 playNextUp()
             }
 
-            if (!isPlaylist) {
+            // Non-playable items (series, season, etc) already created the playlist above
+            if (!isPlaylist && queriedItem.type.playable) {
                 val result = playlistCreator.createFrom(queriedItem)
                 if (result is PlaylistCreationResult.Success && result.playlist.items.isNotEmpty()) {
                     _state.update {
