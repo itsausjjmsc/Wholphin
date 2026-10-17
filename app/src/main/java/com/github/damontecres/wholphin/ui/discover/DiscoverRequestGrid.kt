@@ -132,17 +132,18 @@ class DiscoverRequestViewModel
             startIndex: Int = 0,
         ) {
             fetchJob?.cancel()
-            try {
-                _state.update {
-                    it.copy(
-                        filter = filter,
-                        sortAndDirection = sortAndDirection,
-                        loading = DataLoadingState.Loading,
-                    )
-                }
-                val filter = filter.copy(sortBy = sortAndDirection)
-                fetchJob =
-                    viewModelScope.launchDefault {
+            _state.update {
+                it.copy(
+                    filter = filter,
+                    sortAndDirection = sortAndDirection,
+                    loading = DataLoadingState.Loading,
+                )
+            }
+            val filter = filter.copy(sortBy = sortAndDirection)
+            fetchJob =
+                viewModelScope.launchDefault {
+                    // Catch inside the job, errors from initializing the pager don't propagate to the caller
+                    try {
                         val pager =
                             when (type) {
                                 DiscoverRequestType.DISCOVER_TV -> {
@@ -199,17 +200,17 @@ class DiscoverRequestViewModel
                                 loading = DataLoadingState.Success(pager),
                             )
                         }
+                    } catch (ex: CancellationException) {
+                        throw ex
+                    } catch (ex: Exception) {
+                        Timber.e(ex, "Error initializing %s", type)
+                        _state.update {
+                            it.copy(
+                                loading = DataLoadingState.Error(ex),
+                            )
+                        }
                     }
-            } catch (ex: CancellationException) {
-                throw ex
-            } catch (ex: Exception) {
-                Timber.e(ex, "Error initializing %s", type)
-                _state.update {
-                    it.copy(
-                        loading = DataLoadingState.Error(ex),
-                    )
                 }
-            }
         }
 
         fun onSortChange(newSort: DiscoverSortAndDirection) {
