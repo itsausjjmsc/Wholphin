@@ -470,14 +470,15 @@ class AppUpgradeHandler
                             mostRecentServerProvider.save(CurrentUser(server.server, user))
                         }
                     }
+                    // Only clear after the migration succeeded, so a failure is retried on the next upgrade
+                    appPreferences.updateData {
+                        it.update {
+                            currentServerId = ""
+                            currentUserId = ""
+                        }
+                    }
                 } catch (ex: Exception) {
                     Timber.e(ex, "Error during migration for most recent server")
-                }
-                appPreferences.updateData {
-                    it.update {
-                        currentServerId = ""
-                        currentUserId = ""
-                    }
                 }
             }
 
