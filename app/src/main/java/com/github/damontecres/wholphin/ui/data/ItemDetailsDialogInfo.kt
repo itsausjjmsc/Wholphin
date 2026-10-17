@@ -327,9 +327,11 @@ private fun buildVideoStreamInfo(
         if (stream.width != null && stream.height != null) {
             add(resolutionLabel to "${stream.width}x${stream.height}")
         }
-        if (stream.width != null && stream.height != null) {
-            val aspectRatio = calculateAspectRatio(stream.width!!, stream.height!!)
-            add(aspectRatioLabel to aspectRatio)
+        val width = stream.width
+        val height = stream.height
+        // Unknown dimensions may be reported as 0, which has no aspect ratio
+        if (width != null && height != null && width > 0 && height > 0) {
+            add(aspectRatioLabel to calculateAspectRatio(width, height))
         }
         stream.bitRate?.let { add(bitrateLabel to formatBitrate(it)) }
         stream.averageFrameRate?.let {
