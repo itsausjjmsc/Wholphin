@@ -8,6 +8,7 @@ import androidx.datastore.core.DataStore
 import androidx.preference.PreferenceManager
 import com.github.damontecres.wholphin.data.CurrentUser
 import com.github.damontecres.wholphin.data.JellyfinServerDao
+import com.github.damontecres.wholphin.data.MostRecentServer
 import com.github.damontecres.wholphin.data.MostRecentServerProvider
 import com.github.damontecres.wholphin.data.PlaybackLanguageChoiceDao
 import com.github.damontecres.wholphin.data.RememberedTabDao
@@ -16,6 +17,7 @@ import com.github.damontecres.wholphin.data.SeriesTrackChoiceDao
 import com.github.damontecres.wholphin.data.model.JellyfinUser
 import com.github.damontecres.wholphin.data.model.RememberedTab
 import com.github.damontecres.wholphin.data.model.SeriesTrackChoice
+import com.github.damontecres.wholphin.data.model.SeriesTrackChoiceType
 import com.github.damontecres.wholphin.preferences.AppPreference
 import com.github.damontecres.wholphin.preferences.AppPreferences
 import com.github.damontecres.wholphin.preferences.ExperimentalPreference
@@ -454,12 +456,14 @@ class AppUpgradeHandler
             }
 
             // MostRecentServerProvider replaced AppPreferences.currentServerId/currentUserId in v1.0.9-5
-            if (previous.isEqualOrBefore(Version.fromString("1.0.9-4-g0"))) {
-                try {
-                    val prefs = appPreferences.data.firstOrNull()
-                    val serverId = prefs?.currentServerId?.toUUIDOrNull()
-                    val userId = prefs?.currentUserId?.toUUIDOrNull()
-                    if (serverId != null && userId != null) {
+            // Keep this recovery independent of the app version: an earlier upgrade may have passed the
+            // original migration gate without successfully moving the legacy session.
+            try {
+                val prefs = appPreferences.data.firstOrNull()
+                val serverId = prefs?.currentServerId?.toUUIDOrNull()
+                val userId = prefs?.currentUserId?.toUUIDOrNull()
+                if (serverId != null && userId != null) {
+                    if (mostRecentServerProvider.get() !is MostRecentServer.ServerAndUser) {
                         val server = serverDao.getServer(serverId)
                         val user = server?.users?.firstOrNull { it.id == userId }
                         if (server != null && user != null) {
@@ -467,15 +471,15 @@ class AppUpgradeHandler
                             mostRecentServerProvider.save(CurrentUser(server.server, user))
                         }
                     }
-                } catch (ex: Exception) {
-                    Timber.e(ex, "Error during migration for most recent server")
-                }
-                appPreferences.updateData {
-                    it.update {
-                        currentServerId = ""
-                        currentUserId = ""
+                    appPreferences.updateData {
+                        it.update {
+                            currentServerId = ""
+                            currentUserId = ""
+                        }
                     }
                 }
+            } catch (ex: Exception) {
+                Timber.e(ex, "Error during migration for most recent server")
             }
 
             if (previous.isEqualOrBefore(Version.fromString("1.0.10"))) {
@@ -492,19 +496,21 @@ class AppUpgradeHandler
                 }
             }
 
-            if (previous.isLessThan(Version.fromString("1.0.10-0-g0"))) {
-                val count = seriesTrackChoiceDao.count()
-                if (count == 0) {
-                    var offset = 0
-                    while (true) {
-                        val plcs = playbackLanguageChoiceDao.getAll(100, offset)
-                        if (plcs.isEmpty()) break
-                        offset += plcs.size
+            // Backfill legacy choices whenever they remain. This is intentionally idempotent so that
+            // upgrades which already passed the original migration can recover disabled subtitles.
+            var offset = 0
+            while (true) {
+                val plcs = playbackLanguageChoiceDao.getAll(100, offset)
+                if (plcs.isEmpty()) break
+                offset += plcs.size
 
-                        val stcs = plcs.flatMap(SeriesTrackChoice::from)
-                        Timber.i("Migrating %s PLC to %s STC", plcs.size, stcs.size)
-                        seriesTrackChoiceDao.save(stcs)
-                    }
+                val stcs = plcs.flatMap(SeriesTrackChoice::from)
+                val choicesToSave = stcs.filter { stc ->
+                    seriesTrackChoiceDao.getBySeriesId(stc.userId, stc.parentId, stc.type).isEmpty()
+                }
+                if (choicesToSave.isNotEmpty()) {
+                    Timber.i("Migrating %s PLC to %s STC", plcs.size, choicesToSave.size)
+                    seriesTrackChoiceDao.save(choicesToSave)
                 }
             }
         }
