@@ -180,6 +180,7 @@ class SwitchUserViewModel
                     )
                     val current =
                         serverRepository.changeUser(server.url, authenticationResult, existingUser)
+                    navigationManager.reloadHome()
                     setupNavigationManager.navigateTo(SetupDestination.AppContent(current))
                 } catch (ex: Exception) {
                     Timber.e(ex, "Error logging in user")
@@ -226,6 +227,7 @@ class SwitchUserViewModel
                                 authenticationResult,
                                 existingUser,
                             )
+                        navigationManager.reloadHome()
                         setupNavigationManager.navigateTo(SetupDestination.AppContent(current))
                     } catch (_: CancellationException) {
                         // no-op, user may have canceled
