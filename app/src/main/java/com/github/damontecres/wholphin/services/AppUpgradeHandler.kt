@@ -456,13 +456,13 @@ class AppUpgradeHandler
 
             // MostRecentServerProvider replaced AppPreferences.currentServerId/currentUserId in v1.0.9-5.
             // This isn't gated on the version because builds from v1.0.9-5 never migrated the legacy values.
-            // It only restores when nothing newer was saved, then clears the legacy values so it runs once.
+            // It only restores when no user was saved since, then clears the legacy values so it runs once.
             val legacyPrefs = appPreferences.data.firstOrNull()
             if (!legacyPrefs?.currentServerId.isNullOrBlank() || !legacyPrefs?.currentUserId.isNullOrBlank()) {
                 try {
                     val serverId = legacyPrefs?.currentServerId?.toUUIDOrNull()
                     val userId = legacyPrefs?.currentUserId?.toUUIDOrNull()
-                    if (serverId != null && userId != null && mostRecentServerProvider.get() is MostRecentServer.None) {
+                    if (serverId != null && userId != null && mostRecentServerProvider.get() !is MostRecentServer.ServerAndUser) {
                         val server = serverDao.getServer(serverId)
                         val user = server?.users?.firstOrNull { it.id == userId }
                         if (server != null && user != null) {
