@@ -453,7 +453,8 @@ class AppUpgradeHandler
                 }
             }
 
-            if (current.isEqualOrBefore(Version.fromString("1.0.8-0-g0"))) {
+            // MostRecentServerProvider replaced AppPreferences.currentServerId/currentUserId in v1.0.9-5
+            if (previous.isEqualOrBefore(Version.fromString("1.0.9-4-g0"))) {
                 try {
                     val prefs = appPreferences.data.firstOrNull()
                     val serverId = prefs?.currentServerId?.toUUIDOrNull()
