@@ -53,7 +53,7 @@ import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.liveTvApi
 import timber.log.Timber
 import java.time.LocalDate
-import java.time.OffsetDateTime
+import java.time.LocalDateTime
 import java.time.ZoneId
 import javax.inject.Inject
 
@@ -88,14 +88,20 @@ class DvrScheduleViewModel
                                 isActive = false,
                                 isScheduled = true,
                             ).content.items
-                            // The server omits programInfo for timers without a program, eg time based
-                            // recordings or a program removed by a guide refresh, so skip those
                             .mapNotNull { timer ->
-                                timer.programInfo?.let { BaseItem.from(it, api, true) }
-                            }.filter { it.data.startDate != null }
-                            .groupBy {
-                                it.data.startDate!!.toLocalDate()
-                            }
+                                timer.startDate?.let { startDate ->
+                                    timer.id?.toString()?.let { timerId ->
+                                        ScheduledRecording(
+                                            timerId = timerId,
+                                            seriesTimerId = timer.seriesTimerId?.toString(),
+                                            name = timer.name,
+                                            startDate = startDate,
+                                            endDate = timer.endDate,
+                                            program = timer.programInfo?.let { BaseItem.from(it, api, true) },
+                                        )
+                                    }
+                                }
+                            }.groupBy { it.startDate.toLocalDate() }
 
                     _state.update {
                         it.copy(
@@ -126,10 +132,19 @@ class DvrScheduleViewModel
         }
     }
 
+data class ScheduledRecording(
+    val timerId: String,
+    val seriesTimerId: String?,
+    val name: String?,
+    val startDate: LocalDateTime,
+    val endDate: LocalDateTime?,
+    val program: BaseItem?,
+)
+
 data class DvrScheduleState(
     val loading: LoadingState = LoadingState.Loading,
     val active: List<BaseItem> = emptyList(),
-    val scheduled: Map<LocalDate, List<BaseItem>> = emptyMap(),
+    val scheduled: Map<LocalDate, List<ScheduledRecording>> = emptyMap(),
 )
 
 @Composable
@@ -155,7 +170,7 @@ fun DvrSchedule(
         }
 
         LoadingState.Success -> {
-            var showDialog by remember { mutableStateOf<BaseItem?>(null) }
+            var showDialog by remember { mutableStateOf<ScheduledRecording?>(null) }
             val focusRequester = remember { FocusRequester() }
             if (requestFocusAfterLoading) {
                 LaunchedEffect(Unit) {
@@ -170,16 +185,24 @@ fun DvrSchedule(
                 activeRecordings = state.active,
                 scheduledRecordings = state.scheduled,
                 onClickItem = {
-                    showDialog = it
+                    if (it.program != null) {
+                        showDialog = it
+                    } else {
+                        viewModel.cancelRecording(
+                            it.seriesTimerId ?: it.timerId,
+                            it.seriesTimerId != null,
+                        )
+                    }
                 },
                 modifier =
                     modifier
                         .focusRequester(focusRequester),
             )
-            showDialog?.let { item ->
+            showDialog?.let { recording ->
                 val context = LocalContext.current
+                val program = recording.program ?: return@let
                 ProgramDialog(
-                    state = DataLoadingState.Success(item),
+                    state = DataLoadingState.Success(program),
                     canRecord = true,
                     onDismissRequest = {
                         showDialog = null
@@ -202,13 +225,12 @@ fun DvrSchedule(
                     onRecord = { _, _ ->
                         // no-op
                     },
-                    onCancelRecord = { program, series ->
+                    onCancelRecord = { _, series ->
                         showDialog = null
-                        val timerId =
-                            if (series) program.data.seriesTimerId else program.data.timerId
-                        if (timerId != null) {
-                            viewModel.cancelRecording(timerId, series)
-                        }
+                        viewModel.cancelRecording(
+                            if (series) recording.seriesTimerId ?: recording.timerId else recording.timerId,
+                            series,
+                        )
                     },
                 )
             }
@@ -219,8 +241,8 @@ fun DvrSchedule(
 @Composable
 fun DvrScheduleContent(
     activeRecordings: List<BaseItem>,
-    scheduledRecordings: Map<LocalDate, List<BaseItem>>,
-    onClickItem: (BaseItem) -> Unit,
+    scheduledRecordings: Map<LocalDate, List<ScheduledRecording>>,
+    onClickItem: (ScheduledRecording) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -259,8 +281,26 @@ fun DvrScheduleContent(
                 }
                 items(activeRecordings) { item ->
                     Recording(
-                        item = item,
-                        onClick = { onClickItem.invoke(item) },
+                        recording = ScheduledRecording(
+                            timerId = item.data.timerId ?: "",
+                            seriesTimerId = item.data.seriesTimerId,
+                            name = item.title,
+                            startDate = item.data.startDate ?: LocalDateTime.now(),
+                            endDate = item.data.endDate,
+                            program = item,
+                        ),
+                        onClick = {
+                            onClickItem.invoke(
+                                ScheduledRecording(
+                                    timerId = item.data.timerId ?: "",
+                                    seriesTimerId = item.data.seriesTimerId,
+                                    name = item.title,
+                                    startDate = item.data.startDate ?: LocalDateTime.now(),
+                                    endDate = item.data.endDate,
+                                    program = item,
+                                ),
+                            )
+                        },
                         modifier = Modifier,
                     )
                 }
@@ -284,10 +324,10 @@ fun DvrScheduleContent(
                     )
                 }
                 val programs = scheduledRecordings[date].orEmpty()
-                items(programs) { item ->
+                items(programs) { recording ->
                     Recording(
-                        item = item,
-                        onClick = { onClickItem.invoke(item) },
+                        recording = recording,
+                        onClick = { onClickItem.invoke(recording) },
                         modifier = Modifier,
                     )
                 }
@@ -298,11 +338,12 @@ fun DvrScheduleContent(
 
 @Composable
 fun Recording(
-    item: BaseItem,
+    recording: ScheduledRecording,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val item = recording.program
     ListItem(
         selected = false,
         onClick = onClick,
@@ -320,11 +361,11 @@ fun Recording(
         },
         headlineContent = {
             Text(
-                text = item.title ?: "",
+                text = item?.title ?: recording.name ?: "",
             )
         },
         supportingContent = {
-            if (item.data.isSeries ?: false) {
+            if (item?.data?.isSeries ?: false) {
                 listOfNotNull(
                     item.data.seasonEpisode,
                     item.data.episodeTitle,
@@ -342,12 +383,19 @@ fun Recording(
             val time =
                 DateUtils.formatDateRange(
                     context,
-                    item.data.startDate!!
-                        .toInstant(OffsetDateTime.now().offset)
+                    recording.startDate
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant()
                         .epochSecond * 1000,
-                    item.data.endDate!!
-                        .toInstant(OffsetDateTime.now().offset)
-                        .epochSecond * 1000,
+                    recording.endDate
+                        ?.atZone(ZoneId.systemDefault())
+                        ?.toInstant()
+                        ?.epochSecond
+                        ?.times(1000)
+                        ?: recording.startDate
+                            .atZone(ZoneId.systemDefault())
+                            .toInstant()
+                            .epochSecond * 1000,
                     DateUtils.FORMAT_SHOW_TIME,
                 )
             Text(
