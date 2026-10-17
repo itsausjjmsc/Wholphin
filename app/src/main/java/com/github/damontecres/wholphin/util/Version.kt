@@ -60,7 +60,7 @@ data class Version(
     /**
      * Is this less than the given version (and not equal to!)
      */
-    fun isLessThan(version: Version): Boolean = this != version && isEqualOrBefore(version)
+    fun isLessThan(version: Version): Boolean = !isAtLeast(version)
 
     /**
      * Is this equal to or before the specified version

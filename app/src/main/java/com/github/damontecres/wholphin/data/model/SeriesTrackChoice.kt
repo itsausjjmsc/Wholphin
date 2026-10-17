@@ -92,7 +92,8 @@ data class SeriesTrackChoice(
          */
         fun from(plc: PlaybackLanguageChoice): List<SeriesTrackChoice> =
             buildList {
-                if (plc.subtitleLanguage != null) {
+                // Disabled subtitles were saved with a null subtitleLanguage
+                if (plc.subtitleLanguage != null || plc.subtitlesDisabled == true) {
                     add(
                         SeriesTrackChoice(
                             userId = plc.userId,
