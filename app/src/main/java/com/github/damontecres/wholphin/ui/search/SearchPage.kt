@@ -233,7 +233,7 @@ fun SearchPage(
                             if (combinedMode) {
                                 COMBINED_ROW
                             } else {
-                                firstSuccess
+                                RESULTS_START + firstSuccess
                             }
                         } else {
                             SEERR_ROW
