@@ -33,6 +33,12 @@ class WatchNextTimestampTest {
     }
 
     @Test
+    fun `uses current time when the play date cannot be converted`() {
+        // The SDK parses the server's 0001-01-01 placeholder as LocalDateTime.MIN
+        assertEquals(987_654_321_000L, watchNextEngagementTimeMillis(LocalDateTime.MIN, ZoneId.of("UTC"), 987_654_321_000L))
+    }
+
+    @Test
     fun `uses current time when no play date exists`() {
         assertEquals(987_654_321_000L, watchNextEngagementTimeMillis(null, ZoneId.of("UTC"), 987_654_321_000L))
     }
