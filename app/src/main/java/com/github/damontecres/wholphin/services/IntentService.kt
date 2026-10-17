@@ -167,7 +167,11 @@ class IntentService
             getLongExtra(key, -1).takeIf { it >= 0 } ?: data?.getQueryParameter(key)?.toLongOrNull()
 
         private fun Intent.getBooleanParam(key: String) =
-            getBooleanExtra(key, false) || data?.getQueryParameter(key)?.toBooleanStrictOrNull() == true
+            if (hasExtra(key)) {
+                getBooleanExtra(key, false)
+            } else {
+                data?.getQueryParameter(key)?.toBooleanStrictOrNull() == true
+            }
 
         private fun getDestinationFromChannel(intent: Intent): Destination? =
             intent.let {
