@@ -111,16 +111,25 @@ class PlayExternalViewModel
                     val playlistItem =
                         if (queriedItem.type.playable) {
                             PlaylistItem.Media(BaseItem(queriedItem))
-                        } else if (destination is Destination.PlaybackList) {
+                        } else {
                             val playlistResult =
-                                playlistCreator.createFrom(
-                                    item = queriedItem,
-                                    startIndex = destination.startIndex ?: 0,
-                                    sortAndDirection = destination.sortAndDirection,
-                                    shuffled = destination.shuffle,
-                                    recursive = destination.recursive,
-                                    filter = destination.filter,
-                                )
+                                if (destination is Destination.PlaybackList) {
+                                    playlistCreator.createFrom(
+                                        item = queriedItem,
+                                        startIndex = destination.startIndex ?: 0,
+                                        sortAndDirection = destination.sortAndDirection,
+                                        shuffled = destination.shuffle,
+                                        recursive = destination.recursive,
+                                        filter = destination.filter,
+                                    )
+                                } else {
+                                    // Play a series, season, etc, the same way PlaybackViewModel does
+                                    playlistCreator.createFrom(
+                                        item = queriedItem,
+                                        recursive = true,
+                                        shuffled = (destination as? Destination.Playback)?.shuffle ?: false,
+                                    )
+                                }
                             when (val r = playlistResult) {
                                 is PlaylistCreationResult.Error -> {
                                     state.update {
@@ -140,8 +149,6 @@ class PlayExternalViewModel
                                     r.playlist.items.first()
                                 }
                             }
-                        } else {
-                            throw IllegalArgumentException("Item is not playable and not PlaybackList: ${queriedItem.type}")
                         }
                     val playbackConfig =
                         serverRepository.currentUser?.let { user ->
