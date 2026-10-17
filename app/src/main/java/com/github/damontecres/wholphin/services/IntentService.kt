@@ -89,7 +89,7 @@ class IntentService
                             return IntentResult.Error("Cannot start playback with no itemId")
                         }
                         val position = intent.getLongParam("position")?.coerceAtLeast(0)
-                        val shuffle = intent.getBooleanExtra("shuffle", false)
+                        val shuffle = intent.getBooleanParam("shuffle")
 
                         val playbackDestination =
                             Destination.Playback(
@@ -158,6 +158,9 @@ class IntentService
 
         private fun Intent.getLongParam(key: String) =
             getLongExtra(key, -1).takeIf { it >= 0 } ?: data?.getQueryParameter(key)?.toLongOrNull()
+
+        private fun Intent.getBooleanParam(key: String) =
+            getBooleanExtra(key, false) || data?.getQueryParameter(key)?.toBooleanStrictOrNull() == true
 
         private fun getDestinationFromChannel(intent: Intent): Destination? =
             intent.let {

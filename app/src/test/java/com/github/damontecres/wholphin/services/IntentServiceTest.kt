@@ -2,6 +2,7 @@ package com.github.damontecres.wholphin.services
 
 import android.app.SearchManager
 import android.content.Intent
+import android.net.Uri
 import com.github.damontecres.wholphin.data.CurrentUser
 import com.github.damontecres.wholphin.data.RestoredSession
 import com.github.damontecres.wholphin.data.ServerRepository
@@ -466,5 +467,24 @@ class IntentServiceTest {
             assertEquals(position, second.positionMs)
 
             coVerify { userLibraryApi.getItem(itemId) }
+        }
+
+    @Test
+    fun `Test parseIntent with play URI and params`() =
+        runTest {
+            setupAutoSignInUnprotected()
+
+            val intent =
+                Intent().apply {
+                    data = Uri.parse("wholphin://play?itemId=$itemId&position=4000&shuffle=true")
+                }
+            val result = intentService.parseIntent(intent)
+            assertIs<IntentResult.Target>(result)
+
+            val second = result.destinations[1]
+            assertIs<Destination.Playback>(second)
+            assertEquals(itemId, second.itemId)
+            assertEquals(4_000L, second.positionMs)
+            assertTrue(second.shuffle)
         }
 }
