@@ -55,6 +55,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -196,6 +197,8 @@ class DiscoverRequestViewModel
                                     throw IllegalArgumentException("Cannot display grid for DiscoverRequestType.UNKNOWN")
                                 }
                             }.init(startIndex)
+                        // A replaced fetch must not overwrite the newer fetch's state
+                        ensureActive()
                         _state.update {
                             it.copy(
                                 loading = DataLoadingState.Success(pager),
