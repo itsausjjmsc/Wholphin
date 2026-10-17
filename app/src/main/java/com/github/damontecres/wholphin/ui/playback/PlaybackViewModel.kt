@@ -1617,24 +1617,20 @@ class PlaybackViewModel
 
         fun updateSubtitleDelay(delta: Duration) {
             subtitleDelaySaveJob?.cancel()
-            updateCurrentPlayback {
-                it?.let {
-                    val newDelay = it.subtitleDelay + delta
-                    val result = it.copy(subtitleDelay = it.subtitleDelay + delta)
-                    subtitleDelaySaveJob =
-                        viewModelScope.launchIO {
-                            // Debounce & save
-                            state.value.currentItemPlayback?.let { item ->
-                                delay(1500)
-                                itemPlaybackRepository.saveTrackModifications(
-                                    item.itemId,
-                                    item.subtitleIndex,
-                                    newDelay,
-                                )
-                            }
-                        }
-                    result
-                }
+            updateCurrentPlayback { it?.copy(subtitleDelay = it.subtitleDelay + delta) }
+            // Save for the active subtitle track, which is what loadSubtitleDelay reads
+            val current = state.value.currentPlayback ?: return
+            if (current.subtitleIndexEnabled) {
+                subtitleDelaySaveJob =
+                    viewModelScope.launchIO {
+                        // Debounce & save
+                        delay(1500)
+                        itemPlaybackRepository.saveTrackModifications(
+                            current.item.id,
+                            current.subtitleIndex,
+                            current.subtitleDelay,
+                        )
+                    }
             }
         }
 
