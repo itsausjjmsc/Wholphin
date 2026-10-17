@@ -35,6 +35,8 @@ import com.github.damontecres.wholphin.services.hilt.AuthOkHttpClient
 import com.github.damontecres.wholphin.util.BitstreamFilteringCodecAdapterFactory
 import com.github.damontecres.wholphin.util.Hdr10PlusMaskingFilter
 import com.github.damontecres.wholphin.util.WholphinDispatchers
+import com.google.common.util.concurrent.Futures
+import com.google.common.util.concurrent.ListenableFuture
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.peerless2012.ass.media.AssHandler
 import io.github.peerless2012.ass.media.factory.AssRenderersFactory
@@ -246,8 +248,27 @@ class PlayerFactory
         fun createMediaSession(player: Player) =
             MediaSession
                 .Builder(context, player)
+                .setCallback(AllowAllControllersCallback)
                 .build()
     }
+
+/**
+ * Since Media3 1.11, controllers that aren't trusted (eg Google Home) only get read access by default, so their
+ * commands such as play/pause are ignored. This keeps the previous behavior of letting any controller control playback.
+ */
+private object AllowAllControllersCallback : MediaSession.Callback {
+    override fun onConnectAsync(
+        session: MediaSession,
+        controller: MediaSession.ControllerInfo,
+    ): ListenableFuture<MediaSession.ConnectionResult> =
+        Futures.immediateFuture(
+            MediaSession.ConnectionResult
+                .AcceptedResultBuilder(session, controller)
+                .setAvailableSessionCommands(MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS)
+                .setAvailablePlayerCommands(MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS)
+                .build(),
+        )
+}
 
 val Player.isReleased: Boolean
     get() {
