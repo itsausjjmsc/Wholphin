@@ -191,7 +191,7 @@ class PlayExternalViewModel
                             val format = it.path?.let { File(it).extension } ?: "srt"
                             api.subtitleApi
                                 .getSubtitleUrl(
-                                    routeItemId = itemId,
+                                    routeItemId = item.id,
                                     routeMediaSourceId = mediaSource.id!!,
                                     routeIndex = it.index,
                                     routeFormat = format,
@@ -263,7 +263,7 @@ class PlayExternalViewModel
                     api.playStateApi.reportPlaybackStart(
                         PlaybackStartInfo(
                             canSeek = false,
-                            itemId = itemId,
+                            itemId = item.id,
                             isPaused = false,
                             playMethod = PlayMethod.DIRECT_PLAY,
                             repeatMode = RepeatMode.REPEAT_NONE,
