@@ -4,6 +4,7 @@ import io.mockk.every
 import io.mockk.mockk
 import org.jellyfin.sdk.model.api.CodecType
 import org.jellyfin.sdk.model.api.DeviceProfile
+import org.jellyfin.sdk.model.api.DlnaProfileType
 import org.jellyfin.sdk.model.api.ProfileConditionValue
 import org.junit.Assert
 import org.junit.Test
@@ -35,17 +36,20 @@ class TestDeviceProfileUtils {
         decodeAv1: Boolean = false,
         forceEnabledHdr: Set<String> = emptySet(),
         forceDisabledHdr: Set<String> = emptySet(),
+        isAC3Enabled: Boolean = true,
+        downMixAudio: Boolean = false,
+        preferAc3ForSurround: Boolean = false,
     ): DeviceProfile =
         createDeviceProfile(
             mediaTest = mediaTest,
             maxBitrate = 100_000_000,
-            isAC3Enabled = true,
-            downMixAudio = false,
+            isAC3Enabled = isAC3Enabled,
+            downMixAudio = downMixAudio,
             assDirectPlay = true,
             pgsDirectPlay = true,
             decodeAv1 = decodeAv1,
             jellyfinTenEleven = jellyfinTenEleven,
-            preferAc3ForSurround = false,
+            preferAc3ForSurround = preferAc3ForSurround,
             forceEnabledHdr = forceEnabledHdr,
             forceDisabledHdr = forceDisabledHdr,
             maxResolution = 0,
@@ -137,5 +141,37 @@ class TestDeviceProfileUtils {
                 forceDisabledHdr = setOf(WholphinVideoRangeType.DOVI.serialName),
             )
         Assert.assertTrue(unsupportedRangeTypes(profile, Codec.Video.AV1).contains(WholphinVideoRangeType.DOVI.serialName))
+    }
+
+    private fun videoTranscodeAudioCodecs(profile: DeviceProfile): List<String> =
+        profile.transcodingProfiles
+            .first { it.type == DlnaProfileType.VIDEO }
+            .audioCodec
+            .split(",")
+
+    @Test
+    fun `Test video transcoding allows the supported audio codecs by default`() {
+        val mediaTest = mockk<MediaCodecCapabilitiesTest>(relaxed = true)
+
+        val codecs = videoTranscodeAudioCodecs(buildProfile(mediaTest))
+        Assert.assertTrue(codecs.contains(Codec.Audio.AAC))
+        Assert.assertTrue(codecs.contains(Codec.Audio.EAC3))
+    }
+
+    @Test
+    fun `Test video transcoding respects downmix`() {
+        val mediaTest = mockk<MediaCodecCapabilitiesTest>(relaxed = true)
+
+        val codecs = videoTranscodeAudioCodecs(buildProfile(mediaTest, downMixAudio = true))
+        Assert.assertTrue(codecs.contains(Codec.Audio.AAC))
+        Assert.assertFalse(codecs.contains(Codec.Audio.AC3))
+    }
+
+    @Test
+    fun `Test video transcoding uses AC3 when preferred for surround`() {
+        val mediaTest = mockk<MediaCodecCapabilitiesTest>(relaxed = true)
+
+        val codecs = videoTranscodeAudioCodecs(buildProfile(mediaTest, preferAc3ForSurround = true))
+        Assert.assertEquals(listOf(Codec.Audio.AC3), codecs)
     }
 }
