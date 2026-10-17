@@ -186,6 +186,8 @@ class DiscoverSeriesViewModel
             is4k: Boolean,
         ) {
             val currentUserId = seerrServerRepository.currentUserId.first()
+            val specialsEnabled =
+                seerrServerRepository.current.first()?.requestSpecialEpisodesEnabled ?: true
             val seasonStatus = mutableMapOf<Int, RequestStatus>()
             val seasonAvailability = mutableMapOf<Int, SeerrAvailability>()
             val editable = mutableMapOf<Int, Boolean>()
@@ -233,6 +235,10 @@ class DiscoverSeriesViewModel
             Timber.v("seasonStatus=%s", seasonStatus)
             val requestSeasons =
                 seasonStatus.mapNotNull { (seasonNumber, status) ->
+                    if (seasonNumber == 0 && !specialsEnabled) {
+                        // Hide specials when the Seerr server doesn't allow requesting them
+                        return@mapNotNull null
+                    }
                     tv.seasons?.firstOrNull { it.seasonNumber == seasonNumber }?.let {
                         val availability =
                             when (status) {

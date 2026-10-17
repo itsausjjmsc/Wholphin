@@ -712,6 +712,8 @@ components:
           type: boolean
         cacheImages:
           type: boolean
+        enableSpecialEpisodes:
+          type: boolean
     MovieResult:
       type: object
       required:

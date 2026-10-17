@@ -214,6 +214,12 @@ data class CurrentSeerr(
         get() =
             (serverConfig.series4kEnabled ?: false) &&
                 config.hasPermission(SeerrPermission.REQUEST_4K_TV)
+
+    /**
+     * Whether season 0 (specials) can be requested. Servers that don't send the setting keep showing specials.
+     */
+    val requestSpecialEpisodesEnabled: Boolean
+        get() = serverConfig.enableSpecialEpisodes != false
 }
 
 suspend fun seerrLogin(
