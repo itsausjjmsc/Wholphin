@@ -25,6 +25,7 @@ import dagger.hilt.android.qualifiers.ActivityContext
 import dagger.hilt.android.scopes.ActivityScoped
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.model.serializer.toUUIDOrNull
 import timber.log.Timber
@@ -109,6 +110,23 @@ class LatestNextUpSchedulerService
             userId: UUID,
             serverId: UUID,
         ) {
+            // Don't replace (and immediately re-run) work that is already scheduled for this user,
+            // since current emits on every activity start
+            val activeWork =
+                withContext(dispatcher) {
+                    workManager
+                        .getWorkInfosForUniqueWork(LatestNextUpWorker.WORK_NAME)
+                        .get()
+                }.firstOrNull { !it.state.isFinished }
+            val scheduledUserId =
+                activeWork
+                    ?.tags
+                    ?.firstOrNull { it.startsWith(USER_TAG_PREFIX) }
+                    ?.removePrefix(USER_TAG_PREFIX)
+            if (scheduledUserId == userId.toString()) {
+                Timber.d("LatestNextUpWorker already scheduled for user %s", userId)
+                return
+            }
             val constraints =
                 Constraints
                     .Builder()
@@ -126,7 +144,7 @@ class LatestNextUpSchedulerService
                             LatestNextUpWorker.PARAM_USER_ID to userId.toString(),
                             LatestNextUpWorker.PARAM_SERVER_ID to serverId.toString(),
                         ),
-                    )
+                    ).addTag("$USER_TAG_PREFIX$userId")
             Timber.i("Scheduling periodic LatestNextUpWorker")
 
             workManager.enqueueUniquePeriodicWork(
@@ -134,5 +152,9 @@ class LatestNextUpSchedulerService
                 existingPeriodicWorkPolicy = ExistingPeriodicWorkPolicy.REPLACE,
                 request = periodicWorkRequestBuilder.build(),
             )
+        }
+
+        companion object {
+            private const val USER_TAG_PREFIX = "user:"
         }
     }
