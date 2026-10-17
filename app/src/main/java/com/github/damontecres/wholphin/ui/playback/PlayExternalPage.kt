@@ -53,6 +53,7 @@ import org.jellyfin.sdk.api.client.extensions.subtitleApi
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
 import org.jellyfin.sdk.api.client.extensions.videosApi
 import org.jellyfin.sdk.model.api.MediaStream
+import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.PlayMethod
 import org.jellyfin.sdk.model.api.PlaybackOrder
 import org.jellyfin.sdk.model.api.PlaybackStartInfo
@@ -110,16 +111,25 @@ class PlayExternalViewModel
                     val playlistItem =
                         if (queriedItem.type.playable) {
                             PlaylistItem.Media(BaseItem(queriedItem))
-                        } else if (destination is Destination.PlaybackList) {
+                        } else {
                             val playlistResult =
-                                playlistCreator.createFrom(
-                                    item = queriedItem,
-                                    startIndex = destination.startIndex ?: 0,
-                                    sortAndDirection = destination.sortAndDirection,
-                                    shuffled = destination.shuffle,
-                                    recursive = destination.recursive,
-                                    filter = destination.filter,
-                                )
+                                if (destination is Destination.PlaybackList) {
+                                    playlistCreator.createFrom(
+                                        item = queriedItem,
+                                        startIndex = destination.startIndex ?: 0,
+                                        sortAndDirection = destination.sortAndDirection,
+                                        shuffled = destination.shuffle,
+                                        recursive = destination.recursive,
+                                        filter = destination.filter,
+                                    )
+                                } else {
+                                    // Play a series, season, etc, the same way PlaybackViewModel does
+                                    playlistCreator.createFrom(
+                                        item = queriedItem,
+                                        recursive = true,
+                                        shuffled = (destination as? Destination.Playback)?.shuffle ?: false,
+                                    )
+                                }
                             when (val r = playlistResult) {
                                 is PlaylistCreationResult.Error -> {
                                     state.update {
@@ -139,8 +149,6 @@ class PlayExternalViewModel
                                     r.playlist.items.first()
                                 }
                             }
-                        } else {
-                            throw IllegalArgumentException("Item is not playable and not PlaybackList: ${queriedItem.type}")
                         }
                     val playbackConfig =
                         serverRepository.currentUser?.let { user ->
@@ -183,15 +191,18 @@ class PlayExternalViewModel
                             ?.index
                     val externalSubtitles =
                         mediaSource.mediaStreams
-                            ?.filter { it.isExternal }
-                            ?.sortedWith(compareBy<MediaStream> { it.index == subtitleIndex }.thenBy { it.isDefault })
-                            .orEmpty()
+                            ?.filter { it.isExternal && it.type == MediaStreamType.SUBTITLE }
+                            // Chosen subtitle first, then defaults, since some players (eg VLC) only take the first one
+                            ?.sortedWith(
+                                compareByDescending<MediaStream> { it.index == subtitleIndex }
+                                    .thenByDescending { it.isDefault },
+                            ).orEmpty()
                     val subtitleUrls =
                         externalSubtitles.map {
                             val format = it.path?.let { File(it).extension } ?: "srt"
                             api.subtitleApi
                                 .getSubtitleUrl(
-                                    routeItemId = itemId,
+                                    routeItemId = item.id,
                                     routeMediaSourceId = mediaSource.id!!,
                                     routeIndex = it.index,
                                     routeFormat = format,
@@ -263,7 +274,7 @@ class PlayExternalViewModel
                     api.playStateApi.reportPlaybackStart(
                         PlaybackStartInfo(
                             canSeek = false,
-                            itemId = itemId,
+                            itemId = item.id,
                             isPaused = false,
                             playMethod = PlayMethod.DIRECT_PLAY,
                             repeatMode = RepeatMode.REPEAT_NONE,
