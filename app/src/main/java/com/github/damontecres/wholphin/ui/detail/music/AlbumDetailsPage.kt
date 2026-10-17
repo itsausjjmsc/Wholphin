@@ -430,7 +430,7 @@ fun AlbumDetailsPage(
                             MusicExpandableButtons(
                                 title = album.title ?: "",
                                 actions =
-                                    remember {
+                                    remember(album) {
                                         MusicButtonActions(
                                             onClickPlay = { viewModel.play(it, 0) },
                                             onClickInstantMix = { viewModel.startInstantMix(album.id) },

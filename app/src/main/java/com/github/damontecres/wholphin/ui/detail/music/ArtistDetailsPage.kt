@@ -432,7 +432,7 @@ fun ArtistDetailsPage(
                             MusicExpandableButtons(
                                 title = artist.title ?: "",
                                 actions =
-                                    remember {
+                                    remember(artist) {
                                         MusicButtonActions(
                                             onClickPlay = { shuffled ->
                                                 viewModel.play(artist, shuffled = shuffled)
