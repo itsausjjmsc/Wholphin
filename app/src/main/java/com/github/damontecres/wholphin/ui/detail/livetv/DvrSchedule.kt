@@ -88,13 +88,11 @@ class DvrScheduleViewModel
                                 isActive = false,
                                 isScheduled = true,
                             ).content.items
-                            .map {
-                                BaseItem.from(
-                                    it.programInfo!!,
-                                    api,
-                                    true,
-                                )
-                            } // TODO this probably breaks for time based recordings
+                            // The server omits programInfo for timers without a program, eg time based
+                            // recordings or a program removed by a guide refresh, so skip those
+                            .mapNotNull { timer ->
+                                timer.programInfo?.let { BaseItem.from(it, api, true) }
+                            }.filter { it.data.startDate != null }
                             .groupBy {
                                 it.data.startDate!!.toLocalDate()
                             }

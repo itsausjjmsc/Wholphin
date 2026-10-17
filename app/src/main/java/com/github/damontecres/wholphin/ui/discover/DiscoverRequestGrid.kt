@@ -55,9 +55,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import timber.log.Timber
 
 @HiltViewModel(assistedFactory = DiscoverRequestViewModel.Factory::class)
@@ -132,17 +134,18 @@ class DiscoverRequestViewModel
             startIndex: Int = 0,
         ) {
             fetchJob?.cancel()
-            try {
-                _state.update {
-                    it.copy(
-                        filter = filter,
-                        sortAndDirection = sortAndDirection,
-                        loading = DataLoadingState.Loading,
-                    )
-                }
-                val filter = filter.copy(sortBy = sortAndDirection)
-                fetchJob =
-                    viewModelScope.launchDefault {
+            _state.update {
+                it.copy(
+                    filter = filter,
+                    sortAndDirection = sortAndDirection,
+                    loading = DataLoadingState.Loading,
+                )
+            }
+            val filter = filter.copy(sortBy = sortAndDirection)
+            fetchJob =
+                viewModelScope.launchDefault {
+                    // Catch inside the job, errors from initializing the pager don't propagate to the caller
+                    try {
                         val pager =
                             when (type) {
                                 DiscoverRequestType.DISCOVER_TV -> {
@@ -194,22 +197,27 @@ class DiscoverRequestViewModel
                                     throw IllegalArgumentException("Cannot display grid for DiscoverRequestType.UNKNOWN")
                                 }
                             }.init(startIndex)
+                        // A replaced fetch must not overwrite the newer fetch's state
+                        ensureActive()
                         _state.update {
                             it.copy(
                                 loading = DataLoadingState.Success(pager),
                             )
                         }
+                    } catch (ex: CancellationException) {
+                        throw ex
+                    } catch (ex: Exception) {
+                        Timber.e(ex, "Error initializing %s", type)
+                        // Don't overwrite the state of a newer fetch if this one was replaced
+                        if (isActive) {
+                            _state.update {
+                                it.copy(
+                                    loading = DataLoadingState.Error(ex),
+                                )
+                            }
+                        }
                     }
-            } catch (ex: CancellationException) {
-                throw ex
-            } catch (ex: Exception) {
-                Timber.e(ex, "Error initializing %s", type)
-                _state.update {
-                    it.copy(
-                        loading = DataLoadingState.Error(ex),
-                    )
                 }
-            }
         }
 
         fun onSortChange(newSort: DiscoverSortAndDirection) {

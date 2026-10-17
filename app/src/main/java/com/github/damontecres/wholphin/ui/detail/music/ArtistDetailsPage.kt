@@ -338,7 +338,7 @@ data class ArtistState(
 private const val HEADER_ROW = 0
 private const val SONG_ROW = HEADER_ROW + 1
 private const val ALBUM_ROW = SONG_ROW + 1
-private const val APPEARS_ON_ROW = SONG_ROW + 1
+private const val APPEARS_ON_ROW = ALBUM_ROW + 1
 private const val MUSIC_VIDEO_ROW = APPEARS_ON_ROW + 1
 private const val SIMILAR_ROW = MUSIC_VIDEO_ROW + 1
 
@@ -432,7 +432,7 @@ fun ArtistDetailsPage(
                             MusicExpandableButtons(
                                 title = artist.title ?: "",
                                 actions =
-                                    remember {
+                                    remember(artist) {
                                         MusicButtonActions(
                                             onClickPlay = { shuffled ->
                                                 viewModel.play(artist, shuffled = shuffled)
@@ -620,7 +620,7 @@ fun ArtistDetailsPage(
                                         aspectRatio = AspectRatios.SQUARE,
                                     )
                                 },
-                                modifier = Modifier.focusRequester(focusRequesters[ALBUM_ROW]),
+                                modifier = Modifier.focusRequester(focusRequesters[APPEARS_ON_ROW]),
                             )
                         }
                     }

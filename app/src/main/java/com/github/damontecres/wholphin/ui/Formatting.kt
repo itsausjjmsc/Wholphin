@@ -13,6 +13,8 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.MediaSegmentType
 import timber.log.Timber
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -180,12 +182,18 @@ fun abbreviateNumber(number: Int): String {
     }
     var unit = 0
     var count = number.toDouble()
-    while (count >= 1000 && unit + 1 < abbrevSuffixes.size) {
+    // Compare the displayed (rounded) value, so 999_950 is 1.0M instead of 1000.0K
+    while (count.roundedTo(1) >= 1000 && unit + 1 < abbrevSuffixes.size) {
         count /= 1000
         unit++
     }
     return String.format(Locale.getDefault(), "%.1f%s", count, abbrevSuffixes[unit])
 }
+
+/**
+ * Round the same way as [String.format] does for the given number of decimal places
+ */
+private fun Double.roundedTo(decimals: Int): Double = BigDecimal.valueOf(this).setScale(decimals, RoundingMode.HALF_UP).toDouble()
 
 val byteSuffixes = listOf("B", "KiB", "MiB", "GiB", "TiB")
 val byteRateSuffixes = listOf("bps", "kbps", "mbps", "gbps", "tbps")
@@ -197,7 +205,7 @@ fun formatBytes(
 ): String {
     var unit = 0
     var count = bytes.toDouble()
-    while (count >= divisor && unit + 1 < suffixes.size) {
+    while (count.roundedTo(2) >= divisor && unit + 1 < suffixes.size) {
         count /= divisor
         unit++
     }

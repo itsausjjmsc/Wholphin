@@ -8,6 +8,7 @@ import androidx.datastore.core.DataStore
 import androidx.preference.PreferenceManager
 import com.github.damontecres.wholphin.data.CurrentUser
 import com.github.damontecres.wholphin.data.JellyfinServerDao
+import com.github.damontecres.wholphin.data.MostRecentServer
 import com.github.damontecres.wholphin.data.MostRecentServerProvider
 import com.github.damontecres.wholphin.data.PlaybackLanguageChoiceDao
 import com.github.damontecres.wholphin.data.RememberedTabDao
@@ -453,12 +454,15 @@ class AppUpgradeHandler
                 }
             }
 
-            if (current.isEqualOrBefore(Version.fromString("1.0.8-0-g0"))) {
+            // MostRecentServerProvider replaced AppPreferences.currentServerId/currentUserId in v1.0.9-5.
+            // This isn't gated on the version because builds from v1.0.9-5 never migrated the legacy values.
+            // It only restores when no user was saved since, then clears the legacy values so it runs once.
+            val legacyPrefs = appPreferences.data.firstOrNull()
+            if (!legacyPrefs?.currentServerId.isNullOrBlank() || !legacyPrefs?.currentUserId.isNullOrBlank()) {
                 try {
-                    val prefs = appPreferences.data.firstOrNull()
-                    val serverId = prefs?.currentServerId?.toUUIDOrNull()
-                    val userId = prefs?.currentUserId?.toUUIDOrNull()
-                    if (serverId != null && userId != null) {
+                    val serverId = legacyPrefs?.currentServerId?.toUUIDOrNull()
+                    val userId = legacyPrefs?.currentUserId?.toUUIDOrNull()
+                    if (serverId != null && userId != null && mostRecentServerProvider.get() !is MostRecentServer.ServerAndUser) {
                         val server = serverDao.getServer(serverId)
                         val user = server?.users?.firstOrNull { it.id == userId }
                         if (server != null && user != null) {
@@ -466,14 +470,15 @@ class AppUpgradeHandler
                             mostRecentServerProvider.save(CurrentUser(server.server, user))
                         }
                     }
+                    // Only clear after the migration succeeded, so a failure is retried on the next upgrade
+                    appPreferences.updateData {
+                        it.update {
+                            currentServerId = ""
+                            currentUserId = ""
+                        }
+                    }
                 } catch (ex: Exception) {
                     Timber.e(ex, "Error during migration for most recent server")
-                }
-                appPreferences.updateData {
-                    it.update {
-                        currentServerId = ""
-                        currentUserId = ""
-                    }
                 }
             }
 

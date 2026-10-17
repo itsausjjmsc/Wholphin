@@ -219,4 +219,31 @@ class TestFindIndexByNumberOrId {
                 Assert.assertEquals(1, index)
             }
         }
+
+    @Test
+    fun `Test fallback search checks the parent of each item`() =
+        runTest {
+            // Episode in season 2 without an index number, so the search falls back to scanning the list
+            val unnumbered =
+                BaseItem(
+                    BaseItemDto(
+                        id = UUID.randomUUID(),
+                        type = BaseItemKind.EPISODE,
+                        indexNumber = null,
+                        parentIndexNumber = 2,
+                        parentId = season2Id,
+                    ),
+                )
+            val epS01E00 = create(0, 1)
+            val epS02E00 = create(0, 2)
+            findIndexByNumberOrId(
+                targetNum = 0,
+                targetId = null,
+                list = BlockingList.of(listOf(unnumbered, epS01E00, epS02E00)),
+                parentId = season2Id,
+                parentIndex = 2,
+            ).let { index ->
+                Assert.assertEquals(2, index)
+            }
+        }
 }

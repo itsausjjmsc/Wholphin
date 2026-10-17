@@ -122,7 +122,7 @@ class MusicService
                 mutex.withLock {
                     if (mediaSession == null) {
                         Timber.i("Starting music MediaSession")
-                        mediaSession = MediaSession.Builder(context, player).build()
+                        mediaSession = playerFactory.createMediaSession(player)
                         activityTracker =
                             TrackActivityPlaybackListener(api, player) {
                                 state.value.currentItemId?.let { itemId ->
@@ -302,8 +302,8 @@ class MusicService
                         ?.mediaStreams
                         ?.any { stream ->
                             stream.type == MediaStreamType.AUDIO &&
-                                stream.channels.gt(2)
-                            stream.codec != Codec.Audio.AC3
+                                stream.channels.gt(2) &&
+                                stream.codec != Codec.Audio.AC3
                         } == true
             val url =
                 if (needsAc3Transcode) {

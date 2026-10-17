@@ -489,6 +489,7 @@
     <string name="resolution_switching">Resolution switching</string>
     <string name="local">Local</string>
     <string name="play_trailer">Play trailer</string>
+    <string name="no_app_to_open_trailer">No app is installed that can open this trailer</string>
     <string name="no_trailers">No trailers</string>
     <string name="clear_track_choices">Clear track choices</string>
     <string name="dts_x">DTS:X</string>

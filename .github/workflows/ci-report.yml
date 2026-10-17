@@ -1,0 +1,46 @@
+name: CI report (fork only)
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  GRADLE_OPTS: "-Dorg.gradle.jvmargs='-Xmx12g -XX:MaxMetaspaceSize=1024m'"
+
+jobs:
+  report:
+    if: github.repository == 'itsausjjmsc/Wholphin'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - name: Fetch upstream tags
+        run: git fetch --tags https://github.com/damontecres/Wholphin.git
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Unit tests, lint and debug APK
+        continue-on-error: true
+        run: ./gradlew testDefaultDebugUnitTest lintDefaultDebug assembleDefaultDebug --continue --no-daemon
+      - name: Upload debug APK
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: wholphin-debug-apk-${{ github.event.pull_request.head.sha }}
+          path: app/build/outputs/apk/**/*.apk
+          if-no-files-found: warn
+      - name: Summarize
+        env:
+          REPORT_SHA: ${{ github.event.pull_request.head.sha }}
+        run: python3 .github/ci-report.py > ci-report.md
+      - name: Comment report
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr comment ${{ github.event.pull_request.number }} -R ${{ github.repository }} --body-file ci-report.md
