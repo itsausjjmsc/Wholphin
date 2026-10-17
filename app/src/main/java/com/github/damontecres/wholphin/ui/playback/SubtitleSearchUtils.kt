@@ -158,7 +158,8 @@ fun PlaybackViewModel.downloadAndSwitchSubtitles(
                                 .orEmpty()
                         newCount = subtitleStreams.size
                     }
-                    if (maxAttempts == 0) {
+                    if (newCount == subtitleCount) {
+                        // Still no new subtitle stream after the last attempt
                         showToast(
                             context,
                             context.getString(R.string.subtitle_download_too_long),
