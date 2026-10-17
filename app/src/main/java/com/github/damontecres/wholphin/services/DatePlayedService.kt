@@ -13,6 +13,7 @@ import com.github.damontecres.wholphin.util.WholphinDispatchers
 import com.google.common.cache.CacheBuilder
 import dagger.hilt.android.qualifiers.ActivityContext
 import dagger.hilt.android.scopes.ActivityScoped
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
@@ -95,10 +96,17 @@ class DatePlayedService
             withContext(WholphinDispatchers.IO) {
                 val seriesId = item.data.seriesId
                 return@withContext if (seriesId != null) {
-                    datePlayedCache
-                        .get(SeriesItemId(seriesId, item.id)) {
-                            getLastPlayed(seriesId, item)
-                        }.await()
+                    val key = SeriesItemId(seriesId, item.id)
+                    val deferred = datePlayedCache.get(key) { getLastPlayed(seriesId, item) }
+                    try {
+                        deferred.await()
+                    } catch (ex: CancellationException) {
+                        throw ex
+                    } catch (ex: Exception) {
+                        // Don't keep a failed lookup (eg a timeout) cached, so it is retried next time
+                        datePlayedCache.asMap().remove(key, deferred)
+                        throw ex
+                    }
                 } else {
                     null
                 }
