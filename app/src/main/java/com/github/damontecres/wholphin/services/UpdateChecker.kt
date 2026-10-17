@@ -93,14 +93,15 @@ class UpdateChecker
             val latestRelease = getLatestRelease(updateUrl)
             if (latestRelease != null && latestRelease.version.isGreaterThan(installedVersion)) {
                 Timber.v("Update available $installedVersion => ${latestRelease.version}")
-                pref.edit {
-                    putLong(context.getString(R.string.pref_key_update_last_check), now.time)
-                }
                 if (lastUpdateCheckThreshold >= timeSince) {
                     Timber.i(
                         "Skipping update notification, threshold is $lastUpdateCheckThreshold",
                     )
                 } else {
+                    // Only record the time when the user was actually notified
+                    pref.edit {
+                        putLong(context.getString(R.string.pref_key_update_last_check), now.time)
+                    }
                     showToast(
                         context,
                         "Update available: $installedVersion => ${latestRelease.version}!",
