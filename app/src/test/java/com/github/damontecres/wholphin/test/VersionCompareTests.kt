@@ -71,6 +71,12 @@ class VersionCompareTests {
         Assert.assertTrue(V_0_1_1_4.isLessThan(V_0_1_1_5))
 
         Assert.assertFalse(V_0_2_0.isLessThan(V_0_1_1))
+
+        // Equal versions are not less than each other, regardless of the git hash or a missing commit count
+        Assert.assertFalse(V_0_2_0_0.isLessThan(V_0_2_0))
+        Assert.assertFalse(V_0_2_0.isLessThan(V_0_2_0_0))
+        Assert.assertFalse(Version.fromString("v0.2.0-0-gdef5678").isLessThan(V_0_2_0_0))
+        Assert.assertTrue(V_0_2_0_0.isLessThan(V_0_2_0_7))
     }
 
     @Test
