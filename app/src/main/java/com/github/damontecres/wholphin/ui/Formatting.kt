@@ -193,7 +193,7 @@ fun abbreviateNumber(number: Int): String {
 /**
  * Round the same way as [String.format] does for the given number of decimal places
  */
-private fun Double.roundedTo(decimals: Int): Double = BigDecimal(this).setScale(decimals, RoundingMode.HALF_UP).toDouble()
+private fun Double.roundedTo(decimals: Int): Double = BigDecimal.valueOf(this).setScale(decimals, RoundingMode.HALF_UP).toDouble()
 
 val byteSuffixes = listOf("B", "KiB", "MiB", "GiB", "TiB")
 val byteRateSuffixes = listOf("bps", "kbps", "mbps", "gbps", "tbps")
