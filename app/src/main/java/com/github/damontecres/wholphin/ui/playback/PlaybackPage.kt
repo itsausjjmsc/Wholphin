@@ -245,7 +245,8 @@ fun PlaybackPageContent(
         seekBarState.onValueChange(skipPosition)
     }
     val keyHandler =
-        remember(preferences) {
+        // Keyed on player too, since switching backends between items replaces the player
+        remember(preferences, player) {
             PlaybackKeyHandler(
                 player = player,
                 controlsEnabled = state.nextUp == null,
