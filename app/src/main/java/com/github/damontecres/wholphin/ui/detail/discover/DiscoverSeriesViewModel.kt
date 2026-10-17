@@ -235,8 +235,9 @@ class DiscoverSeriesViewModel
             Timber.v("seasonStatus=%s", seasonStatus)
             val requestSeasons =
                 seasonStatus.mapNotNull { (seasonNumber, status) ->
-                    if (seasonNumber == 0 && !specialsEnabled) {
-                        // Hide specials when the Seerr server doesn't allow requesting them
+                    if (seasonNumber == 0 && !specialsEnabled && status != RequestStatus.PENDING) {
+                        // Hide specials when the Seerr server doesn't allow requesting them,
+                        // unless they are already part of a pending request being edited.
                         return@mapNotNull null
                     }
                     tv.seasons?.firstOrNull { it.seasonNumber == seasonNumber }?.let {
