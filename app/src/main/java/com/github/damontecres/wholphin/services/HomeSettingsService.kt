@@ -778,6 +778,7 @@ class HomeSettingsService
                         title,
                         studios,
                         viewOptions = row.viewOptions,
+                        rowType = row,
                         showViewMore = studios.size >= limit,
                     )
                 }
