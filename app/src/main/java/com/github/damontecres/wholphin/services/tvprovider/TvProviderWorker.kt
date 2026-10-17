@@ -115,7 +115,8 @@ class TvProviderWorker
                 Timber.v("toAdd (%s)=%s", toAdd.size, toAdd.map { it.id })
 
                 // Remove existing items if they are no longer in the next up from server
-                (toRemove + userRemoved)
+                // Items the user removed are kept (not browsable) so they aren't added again on the next run
+                toRemove
                     .map { TvContractCompat.buildWatchNextProgramUri(it.id) }
                     .forEach {
                         context.contentResolver.delete(it, null, null)
