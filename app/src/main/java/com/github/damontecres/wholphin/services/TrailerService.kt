@@ -1,7 +1,9 @@
 package com.github.damontecres.wholphin.services
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.widget.Toast
 import androidx.core.net.toUri
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.model.BaseItem
@@ -12,6 +14,7 @@ import com.github.damontecres.wholphin.ui.nav.Destination
 import dagger.hilt.android.qualifiers.ApplicationContext
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -98,7 +101,13 @@ class TrailerService
 
                     is RemoteTrailer -> {
                         val intent = Intent(Intent.ACTION_VIEW, trailer.url.toUri())
-                        context.startActivity(intent)
+                        try {
+                            context.startActivity(intent)
+                        } catch (ex: ActivityNotFoundException) {
+                            // Many TV devices have no browser and YouTube may not be installed
+                            Timber.w(ex, "No activity to open trailer %s", trailer.url)
+                            Toast.makeText(context, R.string.no_app_to_open_trailer, Toast.LENGTH_LONG).show()
+                        }
                     }
                 }
             }
