@@ -487,4 +487,18 @@ class IntentServiceTest {
             assertEquals(4_000L, second.positionMs)
             assertTrue(second.shuffle)
         }
+
+    @Test
+    fun `Test parseIntent with play URI and VIEW action`() =
+        runTest {
+            setupAutoSignInUnprotected()
+
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("wholphin://play?itemId=$itemId"))
+            val result = intentService.parseIntent(intent)
+            assertIs<IntentResult.Target>(result)
+
+            val destinations = result.destinations
+            assertEquals(2, destinations.size)
+            assertIs<Destination.Playback>(destinations[1])
+        }
 }

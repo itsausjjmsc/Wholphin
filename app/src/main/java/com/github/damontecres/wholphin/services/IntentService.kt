@@ -29,7 +29,14 @@ class IntentService
             Timber.v("Parsing intent %s", intent)
             Timber.v("Intent extras: %s", intent.extras)
             Timber.v("Intent data: %s", intent.data)
-            val action = intent.action ?: intent.data?.host
+            // For wholphin:// URIs the host is the action, since apps opening a URI usually also set ACTION_VIEW
+            val action =
+                intent.data
+                    ?.takeIf { it.scheme == "wholphin" }
+                    ?.host
+                    ?.takeIf { it.isNotBlank() }
+                    ?: intent.action
+                    ?: intent.data?.host
             if (
                 intent.getStringParam(INTENT_ITEM_TYPE) == null &&
                 (action == Intent.ACTION_MAIN || action.isNullOrBlank())
