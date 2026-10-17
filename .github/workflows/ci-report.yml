@@ -27,9 +27,15 @@ jobs:
         run: git fetch --tags https://github.com/damontecres/Wholphin.git
       - name: Setup
         uses: ./.github/actions/setup
-      - name: Unit tests and lint
+      - name: Unit tests, lint and debug APK
         continue-on-error: true
-        run: ./gradlew testDefaultDebugUnitTest lintDefaultDebug --continue --no-daemon
+        run: ./gradlew testDefaultDebugUnitTest lintDefaultDebug assembleDefaultDebug --continue --no-daemon
+      - name: Upload debug APK
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: wholphin-debug-apk-${{ github.event.pull_request.head.sha }}
+          path: app/build/outputs/apk/**/*.apk
+          if-no-files-found: warn
       - name: Summarize
         env:
           REPORT_SHA: ${{ github.event.pull_request.head.sha }}
