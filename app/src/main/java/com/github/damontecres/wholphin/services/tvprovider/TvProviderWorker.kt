@@ -40,8 +40,6 @@ import org.jellyfin.sdk.model.api.request.GetLatestMediaRequest
 import org.jellyfin.sdk.model.extensions.ticks
 import org.jellyfin.sdk.model.serializer.toUUIDOrNull
 import timber.log.Timber
-import java.time.ZoneId
-import java.util.Date
 import java.util.UUID
 import kotlin.time.Duration.Companion.minutes
 
@@ -117,7 +115,8 @@ class TvProviderWorker
                 Timber.v("toAdd (%s)=%s", toAdd.size, toAdd.map { it.id })
 
                 // Remove existing items if they are no longer in the next up from server
-                (toRemove + userRemoved)
+                // Items the user removed are kept (not browsable) so they aren't added again on the next run
+                toRemove
                     .map { TvContractCompat.buildWatchNextProgramUri(it.id) }
                     .forEach {
                         context.contentResolver.delete(it, null, null)
@@ -199,11 +198,7 @@ class TvProviderWorker
                         ?.let(::setDurationMillis)
 
                     setLastEngagementTimeUtcMillis(
-                        dto.userData
-                            ?.lastPlayedDate
-                            ?.atZone(ZoneId.systemDefault())
-                            ?.toEpochSecond()
-                            ?: Date().time, // TODO
+                        watchNextEngagementTimeMillis(dto.userData?.lastPlayedDate),
                     )
 
                     setTitle(item.title)
