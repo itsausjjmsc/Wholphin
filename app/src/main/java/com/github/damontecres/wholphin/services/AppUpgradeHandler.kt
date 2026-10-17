@@ -8,6 +8,7 @@ import androidx.datastore.core.DataStore
 import androidx.preference.PreferenceManager
 import com.github.damontecres.wholphin.data.CurrentUser
 import com.github.damontecres.wholphin.data.JellyfinServerDao
+import com.github.damontecres.wholphin.data.MostRecentServer
 import com.github.damontecres.wholphin.data.MostRecentServerProvider
 import com.github.damontecres.wholphin.data.PlaybackLanguageChoiceDao
 import com.github.damontecres.wholphin.data.RememberedTabDao
@@ -453,13 +454,15 @@ class AppUpgradeHandler
                 }
             }
 
-            // MostRecentServerProvider replaced AppPreferences.currentServerId/currentUserId in v1.0.9-5
-            if (previous.isEqualOrBefore(Version.fromString("1.0.9-4-g0"))) {
+            // MostRecentServerProvider replaced AppPreferences.currentServerId/currentUserId in v1.0.9-5.
+            // This isn't gated on the version because builds from v1.0.9-5 never migrated the legacy values.
+            // It only restores when nothing newer was saved, then clears the legacy values so it runs once.
+            val legacyPrefs = appPreferences.data.firstOrNull()
+            if (!legacyPrefs?.currentServerId.isNullOrBlank() || !legacyPrefs?.currentUserId.isNullOrBlank()) {
                 try {
-                    val prefs = appPreferences.data.firstOrNull()
-                    val serverId = prefs?.currentServerId?.toUUIDOrNull()
-                    val userId = prefs?.currentUserId?.toUUIDOrNull()
-                    if (serverId != null && userId != null) {
+                    val serverId = legacyPrefs?.currentServerId?.toUUIDOrNull()
+                    val userId = legacyPrefs?.currentUserId?.toUUIDOrNull()
+                    if (serverId != null && userId != null && mostRecentServerProvider.get() is MostRecentServer.None) {
                         val server = serverDao.getServer(serverId)
                         val user = server?.users?.firstOrNull { it.id == userId }
                         if (server != null && user != null) {
