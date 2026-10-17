@@ -873,7 +873,7 @@ private suspend fun searchList(
         return list
             .indexOfBlocking {
                 checkNumberOrId(targetNum, targetId, it?.indexNumber, it?.id) &&
-                    checkParent(parentId, parentIndex, item)
+                    checkParent(parentId, parentIndex, it)
             }.coerceAtLeast(0)
     }
 }
