@@ -40,8 +40,6 @@ import org.jellyfin.sdk.model.api.request.GetLatestMediaRequest
 import org.jellyfin.sdk.model.extensions.ticks
 import org.jellyfin.sdk.model.serializer.toUUIDOrNull
 import timber.log.Timber
-import java.time.ZoneId
-import java.util.Date
 import java.util.UUID
 import kotlin.time.Duration.Companion.minutes
 
@@ -199,11 +197,7 @@ class TvProviderWorker
                         ?.let(::setDurationMillis)
 
                     setLastEngagementTimeUtcMillis(
-                        dto.userData
-                            ?.lastPlayedDate
-                            ?.atZone(ZoneId.systemDefault())
-                            ?.toEpochSecond()
-                            ?: Date().time, // TODO
+                        watchNextEngagementTimeMillis(dto.userData?.lastPlayedDate),
                     )
 
                     setTitle(item.title)
