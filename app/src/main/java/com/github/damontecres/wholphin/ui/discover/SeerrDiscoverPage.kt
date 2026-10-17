@@ -380,7 +380,7 @@ fun SeerrDiscoverPage(
                         }
 
                         ROW_GENRES_TV -> {
-                            state.movieGenres.successValue
+                            state.tvGenres.successValue
                                 ?.getOrNull(position.column)
                                 ?.let {
                                     DiscoverFocusedItem.Genre(
