@@ -85,7 +85,7 @@ class ThemeSongPlayer
 
                             ThemeSongVolume.HIGH -> .5f
 
-                            ThemeSongVolume.HIGHEST -> 75f
+                            ThemeSongVolume.HIGHEST -> 1f
                         }
                     val job =
                         scope.launchIO {
