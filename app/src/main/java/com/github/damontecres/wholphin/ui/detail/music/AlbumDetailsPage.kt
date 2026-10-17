@@ -252,12 +252,15 @@ class AlbumViewModel
             favorite: Boolean,
         ) = viewModelScope.launch(ExceptionHandler() + WholphinDispatchers.IO) {
             favoriteWatchManager.setFavorite(itemId, favorite)
-            val album =
-                api.userLibraryApi
-                    .getItem(itemId = itemId)
-                    .content
-                    .let { BaseItem(it, false) }
-            _state.update { it.copy(album = album) }
+            // Only refresh if the album itself changed, otherwise it was a song
+            if (itemId == this@AlbumViewModel.itemId) {
+                val album =
+                    api.userLibraryApi
+                        .getItem(itemId = itemId)
+                        .content
+                        .let { BaseItem(it, false) }
+                _state.update { it.copy(album = album) }
+            }
         }
 
         fun play(
@@ -311,7 +314,7 @@ data class AlbumState(
 private const val HEADER_ROW = 0
 private const val SONG_ROW = HEADER_ROW + 1
 private const val MUSIC_VIDEO_ROW = SONG_ROW + 1
-private const val EXTRAS_ROW = SONG_ROW + 1
+private const val EXTRAS_ROW = MUSIC_VIDEO_ROW + 1
 private const val SIMILAR_ROW = EXTRAS_ROW + 1
 
 @Composable
@@ -427,7 +430,7 @@ fun AlbumDetailsPage(
                             MusicExpandableButtons(
                                 title = album.title ?: "",
                                 actions =
-                                    remember {
+                                    remember(album) {
                                         MusicButtonActions(
                                             onClickPlay = { viewModel.play(it, 0) },
                                             onClickInstantMix = { viewModel.startInstantMix(album.id) },
