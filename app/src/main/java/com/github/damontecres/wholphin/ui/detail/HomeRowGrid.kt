@@ -63,6 +63,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.CollectionType
 import timber.log.Timber
 import java.util.UUID
@@ -270,7 +271,8 @@ fun HomeRowGrid(
                     is HomeRowConfig.Studios -> {
                         StudioCardGrid(
                             itemId = destination.config.parentId,
-                            includeItemTypes = null,
+                            // Same as the home row, which only fetches studios for series
+                            includeItemTypes = listOf(BaseItemKind.SERIES),
                             modifier = Modifier.fillMaxSize(),
                             initialPosition = destination.initialPosition,
                         )

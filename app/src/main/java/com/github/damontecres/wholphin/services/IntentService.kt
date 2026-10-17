@@ -29,7 +29,14 @@ class IntentService
             Timber.v("Parsing intent %s", intent)
             Timber.v("Intent extras: %s", intent.extras)
             Timber.v("Intent data: %s", intent.data)
-            val action = intent.action ?: intent.data?.host
+            // For wholphin:// URIs the host is the action, since apps opening a URI usually also set ACTION_VIEW
+            val action =
+                intent.data
+                    ?.takeIf { it.scheme == "wholphin" }
+                    ?.host
+                    ?.takeIf { it.isNotBlank() }
+                    ?: intent.action
+                    ?: intent.data?.host
             if (
                 intent.getStringParam(INTENT_ITEM_TYPE) == null &&
                 (action == Intent.ACTION_MAIN || action.isNullOrBlank())
@@ -89,7 +96,7 @@ class IntentService
                             return IntentResult.Error("Cannot start playback with no itemId")
                         }
                         val position = intent.getLongParam("position")?.coerceAtLeast(0)
-                        val shuffle = intent.getBooleanExtra("shuffle", false)
+                        val shuffle = intent.getBooleanParam("shuffle")
 
                         val playbackDestination =
                             Destination.Playback(
@@ -158,6 +165,13 @@ class IntentService
 
         private fun Intent.getLongParam(key: String) =
             getLongExtra(key, -1).takeIf { it >= 0 } ?: data?.getQueryParameter(key)?.toLongOrNull()
+
+        private fun Intent.getBooleanParam(key: String) =
+            if (hasExtra(key)) {
+                getBooleanExtra(key, false)
+            } else {
+                data?.getQueryParameter(key)?.toBooleanStrictOrNull() == true
+            }
 
         private fun getDestinationFromChannel(intent: Intent): Destination? =
             intent.let {
