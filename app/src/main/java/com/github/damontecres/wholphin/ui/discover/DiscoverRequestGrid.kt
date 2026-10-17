@@ -58,6 +58,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import timber.log.Timber
 
 @HiltViewModel(assistedFactory = DiscoverRequestViewModel.Factory::class)
@@ -204,10 +205,13 @@ class DiscoverRequestViewModel
                         throw ex
                     } catch (ex: Exception) {
                         Timber.e(ex, "Error initializing %s", type)
-                        _state.update {
-                            it.copy(
-                                loading = DataLoadingState.Error(ex),
-                            )
+                        // Don't overwrite the state of a newer fetch if this one was replaced
+                        if (isActive) {
+                            _state.update {
+                                it.copy(
+                                    loading = DataLoadingState.Error(ex),
+                                )
+                            }
                         }
                     }
                 }
