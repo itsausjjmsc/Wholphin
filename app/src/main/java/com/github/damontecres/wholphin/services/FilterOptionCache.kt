@@ -38,7 +38,6 @@ import org.jellyfin.sdk.api.client.extensions.localizationApi
 import org.jellyfin.sdk.api.client.extensions.studiosApi
 import org.jellyfin.sdk.api.client.extensions.yearsApi
 import org.jellyfin.sdk.model.UUID
-import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
 import timber.log.Timber
@@ -105,11 +104,11 @@ class FilterOptionCache
             }
 
             StudioFilter -> {
+                // Not restricted to series: this filter is also offered for genres in movie libraries
                 api.studiosApi
                     .getStudios(
                         parentId = parentId,
                         userId = userId,
-                        includeItemTypes = listOf(BaseItemKind.SERIES),
                     ).content.items
                     .map { FilterValueOption(it.name ?: "", it.id) }
             }
