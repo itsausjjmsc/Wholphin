@@ -252,12 +252,15 @@ class AlbumViewModel
             favorite: Boolean,
         ) = viewModelScope.launch(ExceptionHandler() + WholphinDispatchers.IO) {
             favoriteWatchManager.setFavorite(itemId, favorite)
-            val album =
-                api.userLibraryApi
-                    .getItem(itemId = itemId)
-                    .content
-                    .let { BaseItem(it, false) }
-            _state.update { it.copy(album = album) }
+            // Only refresh if the album itself changed, otherwise it was a song
+            if (itemId == this@AlbumViewModel.itemId) {
+                val album =
+                    api.userLibraryApi
+                        .getItem(itemId = itemId)
+                        .content
+                        .let { BaseItem(it, false) }
+                _state.update { it.copy(album = album) }
+            }
         }
 
         fun play(
