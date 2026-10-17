@@ -314,7 +314,7 @@ data class AlbumState(
 private const val HEADER_ROW = 0
 private const val SONG_ROW = HEADER_ROW + 1
 private const val MUSIC_VIDEO_ROW = SONG_ROW + 1
-private const val EXTRAS_ROW = SONG_ROW + 1
+private const val EXTRAS_ROW = MUSIC_VIDEO_ROW + 1
 private const val SIMILAR_ROW = EXTRAS_ROW + 1
 
 @Composable
